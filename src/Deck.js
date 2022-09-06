@@ -1,3 +1,4 @@
+import { isDisabled } from "@testing-library/user-event/dist/utils";
 import axios from "axios";
 
 import React, { useEffect, useState } from "react";
@@ -6,6 +7,8 @@ const BASE_URL = "https://deckofcardsapi.com/api/deck";
 
 
 /** Deck component
+ * 
+ * Uses call deck API.
  * 
  * State:
  *  - deckID
@@ -18,8 +21,9 @@ function Deck() {
     deckId: null,
     isLoading: true,
   });
-  const [cards, setCards] = useState([]);
 
+  const [drawnCards, setDrawnCards] = useState([]);
+  const [isDisabled, setIsDisabled] = useState(false);
 
   useEffect(() => {
     async function getDeckID() {
@@ -34,21 +38,26 @@ function Deck() {
 
   /** Draw a card, update cards state with new card */
   async function drawCard() {
-    console.log("deckID", deckId);
-    const result = await axios.get(`${BASE_URL}/${deckId.deckId}/draw`);
-    console.log("card result", result);
-    console.log("cards", cards);
+    setIsDisabled(true);
 
-    setCards([...cards, result.data.cards[0]]);
+    const result = await axios.get(`${BASE_URL}/${deckId.deckId}/draw`);
+
+    setDrawnCards([...drawnCards, result.data.cards[0]]);
+
+    setIsDisabled(false);
+
+    if (result.data.error) alert("Error: no cards remaining!");
   }
 
   if (deckId.isLoading) return <p>...loading...</p>;
+
+  //TODO: Move card to own component
   return (
     <>
-      <button onClick={drawCard}>Draw Card</button>
+      <button onClick={drawCard} disabled={isDisabled}>Draw Card</button>
 
       <div>
-        {cards.map(c => <img src={c.image} alt={c.code} key={c.code} />)}
+        {drawnCards.map(c => c && <img src={c.image} alt={c.code} key={c.code} />)}
       </div>
 
     </>
